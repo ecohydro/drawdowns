@@ -126,7 +126,7 @@ def find_drawdowns(data):
     # Start at the 2nd down_loc (we put a dummy down_loc at the start)
     [drawdowns.append(
         find_drawdown(i, down_vals, down_locs, up_vals, up_locs))
-     for i in np.arange(1, n-1)]
+     for i in np.arange(1, n)]
     # Remove zero values of drawdowns.
     return drawdowns
 
