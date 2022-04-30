@@ -1,7 +1,7 @@
 
 import numpy as np
 import pandas as pd
-#import bisect
+# import bisect
 import sys
 
 
@@ -59,6 +59,12 @@ def find_drawdown(i, down_vals, down_locs, up_vals, up_locs):
     this['draining'] = down_vals[i] - this['end_val']
     this['duration'] = this['end_loc'] - this['start_loc']
     this['magnitude'] = min(this['filling'], this['draining'])
+    this['end_loc_u'] = this['end_loc']
+    this['start_loc_u'] = this['start_loc']
+    if this['magnitude'] == this['filling']:
+        this['type'] = 'filling'
+    else:
+        this['type'] = 'draining'
     return this
 
 
@@ -90,6 +96,52 @@ def lowest_upval(i, up_vals, idx=None, side=None):
         return np.argmin(up_vals[i: idx]) + i
     else:
         raise(ValueError)
+
+
+def update_start_end(drawdown, data):
+    """
+    Revises the start and end locs for drawdowns.
+
+    If drawdown is filling type, move end_loc to the
+    location where the data first crosses the start_val
+    following the peak_loc.
+
+    If the drawdown is draining type, move start_loc to the
+    locaiton where the data first crosses the end_val prior to the peak_loc
+
+    """
+    this = drawdown.copy()
+    peak_val = this['peak_val']
+    peak_loc = this['peak_loc']
+    end_loc = this['end_loc_u']
+    start_loc = this['start_loc_u']
+    filling_test = (data[peak_loc:end_loc] <= data[start_loc])
+    draining_test = (data[start_loc: peak_loc] <= data[end_loc])
+    if this['type'] == 'filling':
+        if (np.where(filling_test)[0].any()) & (this['draining'] > this['filling']):
+            try:
+                this['end_loc'] = np.min(
+                    np.where(data[peak_loc:end_loc] <= data[start_loc])) + peak_loc - 1
+                this['end_val'] = this['start_val']
+            except ValueError:
+                print("Warning. Drawdown {i} (duration {d}) unable to update end_loc".format(
+                    i=this['i'],
+                    d=this['duration']
+                ))
+    elif this['type'] == 'draining':
+        if (np.where(draining_test)[0].any()) & (this['draining'] < this['filling']):
+            try:
+                this['start_loc'] = np.max(
+                    np.where(data[start_loc:peak_loc] <= data[end_loc])) + start_loc - 1
+                this['start_val'] = this['end_val']
+            except ValueError:
+                print("Warning. Drawdown {i} (duration {d}) unable to update start_loc".format(
+                    i=this['i'],
+                    d=this['duration']
+                ))
+    this['duration'] = this['end_loc'] - this['start_loc']
+    return this
+
 
 #
 # def filling(down_vals, up_vals, i):
@@ -126,9 +178,11 @@ def find_drawdowns(data):
     # Start at the 2nd down_loc (we put a dummy down_loc at the start)
     [drawdowns.append(
         find_drawdown(i, down_vals, down_locs, up_vals, up_locs))
-     for i in np.arange(1, n)]
-    # Remove zero values of drawdowns.
-    return drawdowns
+        for i in np.arange(1, n)]
+    updated = []
+    [updated.append(update_start_end(drawdown, data))
+     for drawdown in drawdowns]
+    return updated
 
 
 if __name__ == "__main__":
