@@ -121,8 +121,8 @@ def update_start_end(drawdown, data):
         if (np.where(filling_test)[0].any()) & (this['draining'] > this['filling']):
             try:
                 this['end_loc'] = np.min(
-                    np.where(data[peak_loc:end_loc] <= data[start_loc])) + peak_loc - 1
-                this['end_val'] = this['start_val']
+                    np.where(data[peak_loc:end_loc] <= data[start_loc])) + peak_loc
+                this['end_val'] = data[this['end_loc']]
             except ValueError:
                 print("Warning. Drawdown {i} (duration {d}) unable to update end_loc".format(
                     i=this['i'],
@@ -131,9 +131,9 @@ def update_start_end(drawdown, data):
     elif this['type'] == 'draining':
         if (np.where(draining_test)[0].any()) & (this['draining'] < this['filling']):
             try:
-                this['start_loc'] = np.max(
-                    np.where(data[start_loc:peak_loc] <= data[end_loc])) + start_loc - 1
-                this['start_val'] = this['end_val']
+                this['start_loc'] = np.min(
+                    np.where(data[start_loc:peak_loc] >= this['end_val'])) + start_loc
+                this['start_val'] = data[this['start_loc']]
             except ValueError:
                 print("Warning. Drawdown {i} (duration {d}) unable to update start_loc".format(
                     i=this['i'],

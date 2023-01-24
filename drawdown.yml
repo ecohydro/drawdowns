@@ -1,0 +1,14 @@
+name: drawdown
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - pandas
+  - jupyter
+  - ipykernel
+  - python=3.10
+  - matplotlib
+  - progress
+  - tqdm
+prefix: 
