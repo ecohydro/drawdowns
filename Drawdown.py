@@ -249,6 +249,7 @@ class Drawdown:
                 THE END OF THAT DRAWDOWN OR THE NEAREST ZERO - WHICHEVER IS CLOSER IS THE START OF THIS DRAWDOWN   
         """
         start_loc = 0
+        L.debug("Looking for initial start position...")
         L.debug("Drawdown {i} peak is {peak} at location {loc}".format(
             i=i,
             peak=self._down_vals[i],
@@ -304,6 +305,7 @@ class Drawdown:
                 THE END OF THE DATA OR THE NEAREST ZERO - WHICHEVER IS CLOSER IS THE START OF THIS DRAWDOWN   
         """
         end_loc = len(self.S)-1
+        L.debug("Looking for initial end position...")
         L.debug("Drawdown {i} peak is {peak} at location {loc}".format(
             i=i,
             peak=self._down_vals[i],
@@ -337,19 +339,46 @@ class Drawdown:
         # (do not use the current down_loc in the check)
         if (self.S[self._down_locs[i]+1:end_loc]==0).any():
             # If there is a zero closer than the nearest down_loc, then use that value instead.
-            nearest_zero = self._down_locs[i]+1 + np.min(
+            nearest_zero_idx = self._down_locs[i]+1 + np.min(
                 np.where(self.S[self._down_locs[i]+1:end_loc]==0)[0])
-            if nearest_zero > len(self.S)-1:
-                nearest_zero = len(self.S)-1
+            nearest_zero_loc = self._down_locs[nearest_zero_idx]
+            if nearest_zero_loc > len(self.S)-1:
+                nearest_zero_loc = len(self.S)-1
             L.debug("\t\tFound a zero at location {loc}".format(
-                loc=nearest_zero
+                loc=nearest_zero_loc
             ))
-            if nearest_zero < end_loc:
+            if nearest_zero_loc < end_loc:
                 L.debug("\tUpdating end_loc to {zero} from {end_loc}".format(
-                    zero=nearest_zero,
+                    zero=nearest_zero_loc,
                     end_loc=end_loc
                 ))
-                end_loc = nearest_zero
+                end_loc = nearest_zero_loc
+        # If there are no future down_vals (peaks) that are larger than the current one,
+        # and there are no future zeros in the timeseries, then we are going to
+        # _assume_ that the end_val and end_loc are at the minimum of all future values.
+        # essentially we set the end_val and end_loc to the smallest future up_loc.
+        else:
+            L.debug(
+               f"\tNo larger peak found than {self._down_vals[i]} and no zero found.")
+            L.debug("\tSetting end_val and end_loc to smallest future up_loc")
+            # Find the smallest future up_val:
+            minimum_up_val = np.min(self._up_vals[i:end_loc])
+            # Set nearest_minimum to the location of the minimum_up_val 
+            # in the list of up_vals
+            nearest_minimum_idx = i + np.where(
+                self._up_vals[i:end_loc]==np.min(self._up_vals[i:end_loc]))[0][0]
+            nearest_minimum_loc = self._up_locs[nearest_minimum_idx]
+            if nearest_minimum_loc > len(self.S)-1:
+                nearest_minimum_loc = len(self.S)-1
+            L.debug("\t\tFound a minimum at location {loc}".format(
+                loc=nearest_minimum_loc
+            ))
+            if nearest_minimum_loc < end_loc:
+                L.debug("\tUpdating end_loc to {minimum} from {end_loc}".format(
+                    minimum=nearest_minimum_loc,
+                    end_loc=end_loc
+                ))
+                end_loc = nearest_minimum_loc        
         return end_loc, self.S[end_loc]
 
     def to_csv(self, filename):
