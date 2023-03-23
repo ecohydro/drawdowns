@@ -339,9 +339,9 @@ class Drawdown:
         # (do not use the current down_loc in the check)
         if (self.S[self._down_locs[i]+1:end_loc]==0).any():
             # If there is a zero closer than the nearest down_loc, then use that value instead.
-            nearest_zero_idx = self._down_locs[i]+1 + np.min(
+            nearest_zero_loc = self._down_locs[i]+1 + np.min(
                 np.where(self.S[self._down_locs[i]+1:end_loc]==0)[0])
-            nearest_zero_loc = self._down_locs[nearest_zero_idx]
+            # nearest_zero_loc = self._down_locs[nearest_zero_idx]
             if nearest_zero_loc > len(self.S)-1:
                 nearest_zero_loc = len(self.S)-1
             L.debug("\t\tFound a zero at location {loc}".format(
